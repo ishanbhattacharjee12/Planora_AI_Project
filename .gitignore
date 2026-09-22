@@ -45,3 +45,5 @@ test-results/
 
 # Markdown / Local reference files
 *.md
+!README.md
+
