@@ -220,7 +220,7 @@ async def get_dashboard_stats(db: AsyncSession, user: User) -> dict:
             )
         )).scalar() or 0
         return {"my_tasks": my_tasks, "total_projects": 0, "active_projects": 0,
-                "completed_projects": 0, "pending_tasks": my_tasks, "overdue_tasks": 0}
+                "completed_projects": 0, "overdue_projects": 0, "pending_tasks": my_tasks, "overdue_tasks": 0}
 
     total = (await db.execute(select(func.count()).select_from(Project))).scalar() or 0
     active = (await db.execute(
@@ -230,6 +230,9 @@ async def get_dashboard_stats(db: AsyncSession, user: User) -> dict:
     )).scalar() or 0
     completed = (await db.execute(
         select(func.count()).select_from(Project).where(Project.status == ProjectStatus.COMPLETED)
+    )).scalar() or 0
+    overdue_projects = (await db.execute(
+        select(func.count()).select_from(Project).where(Project.status == ProjectStatus.OVERDUE)
     )).scalar() or 0
     pending_tasks = (await db.execute(
         select(func.count()).select_from(Task).where(Task.status != TaskStatus.DONE)
@@ -244,6 +247,7 @@ async def get_dashboard_stats(db: AsyncSession, user: User) -> dict:
         "total_projects": total,
         "active_projects": active,
         "completed_projects": completed,
+        "overdue_projects": overdue_projects,
         "pending_tasks": pending_tasks,
         "overdue_tasks": overdue,
         "my_tasks": 0,

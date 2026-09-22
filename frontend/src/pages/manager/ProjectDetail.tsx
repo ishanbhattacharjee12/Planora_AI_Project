@@ -12,6 +12,7 @@ import { AnalysisOverview } from "../../components/AnalysisDisplay";
 import DocumentOverviewForm from "../../components/DocumentOverviewForm";
 import { AnalysisTokenBar, useAnalysisUsagePoll } from "../../components/AnalysisTokenBar";
 import FutureEnhancements from "../../components/FutureEnhancements";
+import ProjectStatusControl from "../../components/ProjectStatusControl";
 
 const TABS = ["Overview", "Analysis"];
 
@@ -102,7 +103,7 @@ export default function ProjectDetail() {
   return (
     <div className="page-shell">
       <div className="page-toolbar"><div><span className="page-kicker">Project workspace</span><h1 className="page-title">{project?.name || "Project"}</h1></div></div>
-      <div className="project-meta"><span className={`status-pill status-${project?.status}`}>{project?.status}</span><span>Priority: <strong>{project?.priority}</strong></span><span>Version {project?.current_version}</span></div>
+      <div className="project-meta">{project ? <ProjectStatusControl project={project} /> : <span className="status-pill">Loading...</span>}<span>Priority: <strong>{project?.priority}</strong></span><span>Version {project?.current_version}</span></div>
 
       <div className="project-action-panel card">
         <div className="actions project-action-buttons">

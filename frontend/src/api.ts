@@ -195,6 +195,7 @@ export interface DashboardStats {
   total_projects: number;
   active_projects: number;
   completed_projects: number;
+  overdue_projects?: number;
   pending_tasks: number;
   overdue_tasks: number;
   my_tasks: number;

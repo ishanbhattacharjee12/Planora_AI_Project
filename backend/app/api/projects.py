@@ -130,6 +130,8 @@ async def update_project(
     project = await get_project(db, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    if not await user_can_access_project(db, user, project_id):
+        raise HTTPException(status_code=403, detail="Access denied")
     updates = body.model_dump(exclude_unset=True)
     stack_fields = {"frontend_technology", "backend_technology", "database_technology"}
     if stack_fields & updates.keys() and "known_technologies" not in updates:

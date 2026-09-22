@@ -84,7 +84,7 @@ export default function ProjectsList() {
           {visibleProjects.map((p) => (
             <tr key={p.id}>
               <td><Link className="project-name-link" to={`/manager/projects/${p.id}`}>{p.name}</Link></td>
-              <td><span className="badge badge-medium">{p.status}</span></td>
+              <td><span className={`status-pill status-${p.status}`}>{p.status.replace(/_/g, " ")}</span></td>
               <td><span className={`badge badge-${p.priority}`}>{p.priority}</span></td>
               <td>{p.classification}</td>
               <td>{new Date(p.updated_at).toLocaleDateString()}</td>

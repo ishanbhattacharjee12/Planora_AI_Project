@@ -326,6 +326,7 @@ class DashboardStats(BaseModel):
     total_projects: int = 0
     active_projects: int = 0
     completed_projects: int = 0
+    overdue_projects: int = 0
     pending_tasks: int = 0
     overdue_tasks: int = 0
     my_tasks: int = 0

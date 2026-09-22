@@ -43,6 +43,7 @@ class ProjectStatus(str, enum.Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     ARCHIVED = "archived"
+    OVERDUE = "overdue"
 
 
 class AnalysisStatus(str, enum.Enum):

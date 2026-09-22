@@ -94,8 +94,8 @@ a.compact-row:hover { background: #faf9f5; }
 .empty-state { padding: 34px 22px; color: var(--muted); text-align: center; font-size: 14px; border-top: 1px solid #eeece7; }
 
 .status-pill, .badge { display: inline-flex; align-items: center; width: fit-content; min-height: 27px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: capitalize; white-space: nowrap; }
-.status-pill { background: #efefec; color: #5c5c5c; }.status-active,.status-in_progress,.status-approved { background:#e1f3eb; color:#116544; }.status-completed,.status-done { background:#e8f0e9; color:#306b43; }.status-review { background:#fff5c4; color:#7a6200; }.status-todo { background:#efefec; color:#5c5c5c; }
-.badge-high,.badge-critical { background:#fde9e7; color:#a82e29; }.badge-medium { background:#fff4c3; color:#755d00; }.badge-low { background:#e3f3ec; color:#126a49; }
+.status-pill { background: #efefec; color: #5c5c5c; }.status-active,.status-in_progress,.status-approved { background:#e1f3eb; color:#116544; }.status-completed,.status-done { background:#e8f0e9; color:#306b43; }.status-review { background:#fff5c4; color:#7a6200; }.status-todo { background:#efefec; color:#5c5c5c; }.status-overdue { background:#fde9e7; color:#a82e29; }
+.badge-high,.badge-critical,.badge-overdue { background:#fde9e7; color:#a82e29; }.badge-medium { background:#fff4c3; color:#755d00; }.badge-low { background:#e3f3ec; color:#126a49; }
 
 .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 .table { width: 100%; border-collapse: collapse; background: #fff; }
@@ -375,4 +375,105 @@ input:disabled { color: #777; background: #f4f3ef; }
   .analysis-report-shell .analysis-card > .analysis-lead-grid,
   .analysis-report-shell .analysis-card > .analysis-decision-callout { margin-left:17px; margin-right:17px; }
   .create-form-section { padding:18px; }
+}
+
+
+/* Project Status Dropdown & Control */
+.project-status-control-container { display: inline-flex; align-items: center; }
+.status-dropdown-wrapper { display: inline-flex; align-items: center; gap: 8px; }
+.status-control-label { font-size: 13px; font-weight: 700; color: var(--ink); }
+.status-selector-relative { position: relative; display: inline-block; }
+.status-pill-interactive {
+  cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.06);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.status-pill-interactive:hover {
+  filter: brightness(0.96);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.status-pill-interactive:focus-visible {
+  outline: 3px solid rgba(242, 200, 17, 0.35);
+  outline-offset: 1px;
+}
+.status-icon {
+  flex-shrink: 0;
+}
+.dropdown-chevron {
+  transition: transform 0.2s ease;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+.dropdown-chevron.open {
+  transform: rotate(180deg);
+}
+.status-dropdown-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.status-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 270px;
+  background: #ffffff;
+  border: 1px solid #d8d6cf;
+  border-radius: 8px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.14);
+  padding: 6px;
+}
+.status-dropdown-header {
+  padding: 8px 10px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid #f0eee9;
+  margin-bottom: 4px;
+}
+.status-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.status-dropdown-item:hover,
+.status-dropdown-item:focus-visible {
+  background: #f8f7f4;
+  outline: none;
+}
+.status-dropdown-item.selected {
+  background: #f4f3ef;
+}
+.status-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.status-item-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.status-check {
+  color: #171717;
+}
+.status-item-desc {
+  font-size: 11.5px;
+  color: #71717a;
+  line-height: 1.35;
+  margin: 0;
 }
