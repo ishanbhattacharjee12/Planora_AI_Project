@@ -221,3 +221,111 @@ async def test_dashboard_stats_reflect_project_lifecycle_and_tasks(
     assert stats["overdue_projects"] == 1
     # Tasks: only pending (todo + in_progress = 2)
     assert stats["pending_tasks"] == 2
+
+
+@pytest.mark.asyncio
+async def test_single_project_dashboard_parity(authed_client, db_session: AsyncSession):
+    # Test 1 project exists -> Dashboard returns total_projects = 1
+    create_resp = await authed_client.post(
+        "/api/projects",
+        json={"name": "Single Live Project", "idea": "Dashboard parity test"},
+    )
+    assert create_resp.status_code == 201
+    p_id = create_resp.json()["id"]
+
+    # Verify both list_projects and dashboard_stats report exactly 1 project
+    list_resp = await authed_client.get("/api/projects")
+    assert list_resp.status_code == 200
+    assert len(list_resp.json()) == 1
+
+    stats_resp = await authed_client.get("/api/dashboard/stats")
+    assert stats_resp.status_code == 200
+    stats = stats_resp.json()
+    assert stats["total_projects"] == 1
+    assert stats["active_projects"] == 0  # Draft is not in active_statuses
+
+    # Move to in_progress
+    await authed_client.patch(f"/api/projects/{p_id}", json={"status": "in_progress"})
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["active_projects"] == 1
+    assert stats["completed_projects"] == 0
+    assert stats["overdue_projects"] == 0
+
+    # Move to completed
+    await authed_client.patch(f"/api/projects/{p_id}", json={"status": "completed"})
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["active_projects"] == 0
+    assert stats["completed_projects"] == 1
+    assert stats["overdue_projects"] == 0
+
+    # Move to overdue
+    await authed_client.patch(f"/api/projects/{p_id}", json={"status": "overdue"})
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["active_projects"] == 0
+    assert stats["completed_projects"] == 0
+    assert stats["overdue_projects"] == 1
+
+
+@pytest.mark.asyncio
+async def test_task_independence_from_project_status(authed_client, db_session: AsyncSession):
+    # Phase 8: Changing project status must NOT affect task pending count
+    create_resp = await authed_client.post(
+        "/api/projects",
+        json={"name": "Independence Test Project", "idea": "Tasks remain unchanged"},
+    )
+    p_id = create_resp.json()["id"]
+
+    # Add 3 pending tasks
+    for i in range(3):
+        db_session.add(
+            Task(project_id=p_id, task_id=f"IND-TASK-{i}", name=f"Task {i}", status=TaskStatus.TODO)
+        )
+    await db_session.flush()
+
+    # Project in progress -> pending_tasks == 3
+    await authed_client.patch(f"/api/projects/{p_id}", json={"status": "in_progress"})
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["pending_tasks"] == 3
+    assert stats["active_projects"] == 1
+
+    # Project marked Completed -> pending_tasks must still be 3
+    await authed_client.patch(f"/api/projects/{p_id}", json={"status": "completed"})
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["completed_projects"] == 1
+    assert stats["active_projects"] == 0
+    assert stats["pending_tasks"] == 3
+
+    # Project marked Overdue -> pending_tasks must still be 3
+    await authed_client.patch(f"/api/projects/{p_id}", json={"status": "overdue"})
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["overdue_projects"] == 1
+    assert stats["pending_tasks"] == 3
+
+
+@pytest.mark.asyncio
+async def test_manager_scoping_and_task_generation_authorization(
+    authed_client, other_manager_client, db_session: AsyncSession
+):
+    # Manager 1 creates project
+    p_resp = await authed_client.post(
+        "/api/projects",
+        json={"name": "Manager 1 Project", "idea": "Scoping test"},
+    )
+    p_id = p_resp.json()["id"]
+    db_session.add(Task(project_id=p_id, task_id="M1-T1", name="M1 Task", status=TaskStatus.TODO))
+    await db_session.flush()
+
+    # Manager 1 sees 1 project and 1 pending task
+    m1_stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert m1_stats["total_projects"] == 1
+    assert m1_stats["pending_tasks"] == 1
+
+    # Manager 2 sees 0 projects and 0 pending tasks (cannot see Manager 1's data)
+    m2_stats = (await other_manager_client.get("/api/dashboard/stats")).json()
+    assert m2_stats["total_projects"] == 0
+    assert m2_stats["pending_tasks"] == 0
+
+    # Manager 2 cannot generate tasks on Manager 1's project (403)
+    gen_resp = await other_manager_client.post(f"/api/projects/{p_id}/generate-tasks")
+    assert gen_resp.status_code == 403
+

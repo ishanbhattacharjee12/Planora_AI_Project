@@ -93,8 +93,11 @@ async def list_projects(db: AsyncSession = Depends(get_db), user: User = Depends
     if user.role.value == "admin":
         result = await db.execute(select(Project).order_by(Project.created_at.desc()))
     elif user.role.value == "manager":
+        member_proj_ids = select(ProjectMember.project_id).where(ProjectMember.user_id == user.id)
         result = await db.execute(
-            select(Project).where(Project.created_by_id == user.id).order_by(Project.created_at.desc())
+            select(Project)
+            .where(or_(Project.created_by_id == user.id, Project.id.in_(member_proj_ids)))
+            .order_by(Project.created_at.desc())
         )
     else:
         result = await db.execute(
@@ -464,7 +467,11 @@ async def generate_tasks(
     project = await get_project(db, project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    if project.status != ProjectStatus.APPROVED:
+    if not await user_can_access_project(db, user, project_id):
+        raise HTTPException(status_code=403, detail="Access denied")
+    if project.status == ProjectStatus.REVIEW:
+        await approve_project_plan(db, project, user.id)
+    elif project.status not in (ProjectStatus.APPROVED, ProjectStatus.IN_PROGRESS):
         raise HTTPException(status_code=400, detail="Project must be approved first")
     tasks = await generate_tasks_from_analysis(db, project)
     await log_audit(db, user_id=user.id, action="generate_tasks", resource_type="project", resource_id=project.id)

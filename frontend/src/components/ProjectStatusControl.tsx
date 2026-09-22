@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, Clock3, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
+import { Check, ChevronDown, Clock3, CheckCircle2, AlertTriangle, FileText, CheckCheck } from "lucide-react";
 import { Project, projectsApi } from "../api";
 import StatusChangeDialog from "./StatusChangeDialog";
 
@@ -12,6 +12,9 @@ const STATUS_OPTIONS: Array<{ value: string; label: string; description: string 
   { value: "in_progress", label: "In Progress", description: "Project is currently in active delivery." },
   { value: "completed", label: "Completed", description: "Project deliverables are finished and delivered." },
   { value: "overdue", label: "Overdue", description: "Project has missed its deadline or delivery target." },
+  { value: "review", label: "Review", description: "Project plan is ready for review." },
+  { value: "approved", label: "Approved", description: "Project plan approved, ready for task generation." },
+  { value: "draft", label: "Draft", description: "Initial project draft." },
 ];
 
 export default function ProjectStatusControl({ project }: ProjectStatusControlProps) {
@@ -33,7 +36,7 @@ export default function ProjectStatusControl({ project }: ProjectStatusControlPr
     },
   });
 
-  // Include current status if it is an intermediate state not in primary 3 options (e.g. review, approved, draft)
+  // Include current status if not already present
   const options = [...STATUS_OPTIONS];
   if (!options.some((o) => o.value === project.status)) {
     options.unshift({
@@ -65,6 +68,8 @@ export default function ProjectStatusControl({ project }: ProjectStatusControlPr
       case "in_progress":
       case "active":
         return <Clock3 size={14} className="status-icon" />;
+      case "approved":
+        return <CheckCheck size={14} className="status-icon" />;
       default:
         return <FileText size={14} className="status-icon" />;
     }

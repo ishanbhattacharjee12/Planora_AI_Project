@@ -16,6 +16,10 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         if "postgresql" in settings.database_url:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            try:
+                await conn.execute(text("ALTER TYPE projectstatus ADD VALUE IF NOT EXISTS 'overdue'"))
+            except Exception:
+                pass
         await conn.run_sync(Base.metadata.create_all)
         if settings.database_url.startswith("sqlite"):
             await conn.run_sync(sync_missing_columns)

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnalysisTokenUsage, projectsApi } from "../../api";
+import { AnalysisTokenUsage, projectsApi, tasksApi } from "../../api";
 import {
   BACKEND_OPTIONS,
   DATABASE_OPTIONS,
@@ -21,6 +21,7 @@ export default function ProjectDetail() {
   const projectId = Number(id);
   const [tab, setTab] = useState("Overview");
   const [analyzing, setAnalyzing] = useState(false);
+  const [generatingTasks, setGeneratingTasks] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState("");
   const [tokenUsage, setTokenUsage] = useState<AnalysisTokenUsage | null>(null);
@@ -34,6 +35,11 @@ export default function ProjectDetail() {
   const { data: analysis } = useQuery({
     queryKey: ["analysis", projectId],
     queryFn: () => projectsApi.getAnalysis(projectId),
+    enabled: !!projectId,
+  });
+  const { data: tasks } = useQuery({
+    queryKey: ["tasks", projectId],
+    queryFn: () => tasksApi.byProject(projectId),
     enabled: !!projectId,
   });
   const { data: persistedUsage } = useQuery({
@@ -65,9 +71,13 @@ export default function ProjectDetail() {
     try {
       const result = await projectsApi.analyze(projectId);
       setTokenUsage(result.token_usage);
-      queryClient.invalidateQueries({ queryKey: ["analysis", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
-      queryClient.invalidateQueries({ queryKey: ["analysis-usage", projectId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["analysis", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["analysis-usage", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["projects"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
       setTab("Analysis");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");
@@ -78,13 +88,35 @@ export default function ProjectDetail() {
   };
 
   const approve = async () => {
-    await projectsApi.approve(projectId);
-    queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    setError("");
+    try {
+      await projectsApi.approve(projectId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["projects"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Approval failed");
+    }
   };
 
   const generateTasks = async () => {
-    await projectsApi.generateTasks(projectId);
-    queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+    setGeneratingTasks(true);
+    setError("");
+    try {
+      await projectsApi.generateTasks(projectId);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["tasks", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
+        queryClient.invalidateQueries({ queryKey: ["projects"] }),
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Task generation failed");
+    } finally {
+      setGeneratingTasks(false);
+    }
   };
 
   const downloadPdf = async () => {
@@ -100,27 +132,72 @@ export default function ProjectDetail() {
     }
   };
 
+  const hasAnalysis = (analysis?.length || 0) > 0;
+  const tasksCount = tasks?.length || 0;
+
   return (
     <div className="page-shell">
-      <div className="page-toolbar"><div><span className="page-kicker">Project workspace</span><h1 className="page-title">{project?.name || "Project"}</h1></div></div>
-      <div className="project-meta">{project ? <ProjectStatusControl project={project} /> : <span className="status-pill">Loading...</span>}<span>Priority: <strong>{project?.priority}</strong></span><span>Version {project?.current_version}</span></div>
+      <div className="page-toolbar">
+        <div>
+          <span className="page-kicker">Project workspace</span>
+          <h1 className="page-title">{project?.name || "Project"}</h1>
+        </div>
+      </div>
+      <div className="project-meta">
+        {project ? (
+          <ProjectStatusControl project={project} />
+        ) : (
+          <span className="status-pill">Loading...</span>
+        )}
+        <span>Priority: <strong>{project?.priority}</strong></span>
+        <span>Version {project?.current_version}</span>
+      </div>
 
       <div className="project-action-panel card">
         <div className="actions project-action-buttons">
-          <button className="btn-primary" onClick={runAnalysis} disabled={analyzing}>
-            {analyzing ? "Analyzing…" : "Run AI Analysis"}
+          <button
+            className="btn-primary"
+            onClick={runAnalysis}
+            disabled={analyzing}
+          >
+            {analyzing
+              ? "Analyzing…"
+              : hasAnalysis
+              ? "Re-run AI Analysis"
+              : "Run AI Analysis"}
           </button>
+
           {project?.status === "review" && (
-            <button className="btn-primary" onClick={approve}>Approve Plan</button>
-          )}
-          {project?.status === "approved" && (
-            <button className="btn-primary" onClick={generateTasks}>Generate Tasks</button>
-          )}
-          {(analysis?.length || 0) > 0 && (
-            <button className="btn-primary" onClick={downloadPdf} disabled={downloadingPdf}>
-              {downloadingPdf ? "Preparing PDF..." : "Download PDF Report"}
+            <button
+              className="button"
+              onClick={approve}
+              disabled={analyzing}
+            >
+              Approve Plan
             </button>
           )}
+
+          <button
+            className="btn-primary"
+            onClick={generateTasks}
+            disabled={!hasAnalysis || analyzing || generatingTasks}
+            title={!hasAnalysis ? "Run AI analysis first to generate tasks" : undefined}
+          >
+            {generatingTasks
+              ? "Generating Tasks…"
+              : tasksCount > 0
+              ? `Generate Tasks (${tasksCount})`
+              : "Generate Tasks"}
+          </button>
+
+          <button
+            className="btn-primary"
+            onClick={downloadPdf}
+            disabled={!hasAnalysis || downloadingPdf}
+            title={!hasAnalysis ? "Generate AI analysis first to download PDF report" : undefined}
+          >
+            {downloadingPdf ? "Preparing PDF..." : "Download PDF Report"}
+          </button>
         </div>
         <AnalysisTokenBar
           usage={displayUsage}
@@ -132,7 +209,13 @@ export default function ProjectDetail() {
 
       <div className="tabs">
         {TABS.map((t) => (
-          <button key={t} className={`tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>{t}</button>
+          <button
+            key={t}
+            className={`tab ${tab === t ? "active" : ""}`}
+            onClick={() => setTab(t)}
+          >
+            {t}
+          </button>
         ))}
       </div>
 
