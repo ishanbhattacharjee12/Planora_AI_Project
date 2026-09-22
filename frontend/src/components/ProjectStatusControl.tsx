@@ -12,9 +12,6 @@ const STATUS_OPTIONS: Array<{ value: string; label: string; description: string 
   { value: "in_progress", label: "In Progress", description: "Project is currently in active delivery." },
   { value: "completed", label: "Completed", description: "Project deliverables are finished and delivered." },
   { value: "overdue", label: "Overdue", description: "Project has missed its deadline or delivery target." },
-  { value: "review", label: "Review", description: "Project plan is ready for review." },
-  { value: "approved", label: "Approved", description: "Project plan approved, ready for task generation." },
-  { value: "draft", label: "Draft", description: "Initial project draft." },
 ];
 
 export default function ProjectStatusControl({ project }: ProjectStatusControlProps) {
@@ -109,7 +106,7 @@ export default function ProjectStatusControl({ project }: ProjectStatusControlPr
                 aria-label="Change project status"
               >
                 <div className="status-dropdown-header">
-                  <span>Change project status</span>
+                  <span>Update Project Status</span>
                 </div>
                 {options.map((opt) => {
                   const isSelected = opt.value === project.status;

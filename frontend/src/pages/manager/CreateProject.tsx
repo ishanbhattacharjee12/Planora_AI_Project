@@ -104,11 +104,11 @@ export default function CreateProject() {
     <div className="page-shell create-project-page">
       <div className="create-project-hero">
         <div>
-          <span className="page-kicker">New initiative</span>
-          <h1>Turn the idea into a build-ready brief.</h1>
-          <p>Capture the decisions that matter. Planora AI turns them into five focused analysis sections.</p>
+          <span className="page-kicker">New Project Initiative</span>
+          <h1>Initiate Project Brief</h1>
+          <p>Define project objectives, specifications, and architecture requirements for structured AI planning.</p>
         </div>
-        <div className="focused-analysis-badge"><Sparkles size={17} /> 5-section analysis</div>
+        <div className="focused-analysis-badge"><Sparkles size={17} /> 5-Section Structured Analysis</div>
       </div>
 
       <div className="create-project-layout">
@@ -116,21 +116,21 @@ export default function CreateProject() {
           <section className="create-form-section">
             <div className="create-form-heading">
               <span><Layers3 size={18} /></span>
-              <div><h2>Project essentials</h2><p>Name the initiative and explain what should be built.</p></div>
+              <div><h2>Project Essentials</h2><p>Specify the initiative name, business objectives, and scope.</p></div>
             </div>
             <div className="form-grid">
               <div className="form-group form-span">
-                <label htmlFor="project-name">Project name</label>
-                <input id="project-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Customer support knowledge hub" required />
+                <label htmlFor="project-name">Project Name</label>
+                <input id="project-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Enterprise Knowledge Hub" required />
               </div>
               <div className="form-group form-span">
-                <div className="field-label-row"><label htmlFor="project-idea">Project idea</label><small>{idea.length} characters</small></div>
-                <textarea id="project-idea" value={idea} onChange={(e) => setIdea(e.target.value)} rows={5} placeholder="Describe the problem, the intended solution, and what a successful experience looks like." required />
-                <small className="field-help">Specific workflows and outcomes produce a more grounded analysis.</small>
+                <div className="field-label-row"><label htmlFor="project-idea">Project Objectives & Requirements</label><small>{idea.length} characters</small></div>
+                <textarea id="project-idea" value={idea} onChange={(e) => setIdea(e.target.value)} rows={5} placeholder="Describe the business problem, proposed solution architecture, user personas, and target outcomes." required />
+                <small className="field-help">Clear and specific workflow descriptions produce higher quality AI architecture plans.</small>
               </div>
               <div className="form-group form-span">
-                <label htmlFor="project-description">Supporting context <span>Optional</span></label>
-                <textarea id="project-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Existing process, background, or other context the analysis should consider." />
+                <label htmlFor="project-description">Supporting Context <span>Optional</span></label>
+                <textarea id="project-description" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Provide existing infrastructure context, integration requirements, or architectural constraints." />
               </div>
             </div>
           </section>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AnalysisTokenUsage, projectsApi, tasksApi } from "../../api";
+import { AnalysisTokenUsage, projectsApi } from "../../api";
 import {
   BACKEND_OPTIONS,
   DATABASE_OPTIONS,
@@ -21,7 +21,6 @@ export default function ProjectDetail() {
   const projectId = Number(id);
   const [tab, setTab] = useState("Overview");
   const [analyzing, setAnalyzing] = useState(false);
-  const [generatingTasks, setGeneratingTasks] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState("");
   const [tokenUsage, setTokenUsage] = useState<AnalysisTokenUsage | null>(null);
@@ -35,11 +34,6 @@ export default function ProjectDetail() {
   const { data: analysis } = useQuery({
     queryKey: ["analysis", projectId],
     queryFn: () => projectsApi.getAnalysis(projectId),
-    enabled: !!projectId,
-  });
-  const { data: tasks } = useQuery({
-    queryKey: ["tasks", projectId],
-    queryFn: () => tasksApi.byProject(projectId),
     enabled: !!projectId,
   });
   const { data: persistedUsage } = useQuery({
@@ -101,24 +95,6 @@ export default function ProjectDetail() {
     }
   };
 
-  const generateTasks = async () => {
-    setGeneratingTasks(true);
-    setError("");
-    try {
-      await projectsApi.generateTasks(projectId);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["tasks", projectId] }),
-        queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
-        queryClient.invalidateQueries({ queryKey: ["projects"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-      ]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Task generation failed");
-    } finally {
-      setGeneratingTasks(false);
-    }
-  };
-
   const downloadPdf = async () => {
     setDownloadingPdf(true);
     setError("");
@@ -133,7 +109,6 @@ export default function ProjectDetail() {
   };
 
   const hasAnalysis = (analysis?.length || 0) > 0;
-  const tasksCount = tasks?.length || 0;
 
   return (
     <div className="page-shell">
@@ -176,19 +151,6 @@ export default function ProjectDetail() {
               Approve Plan
             </button>
           )}
-
-          <button
-            className="btn-primary"
-            onClick={generateTasks}
-            disabled={!hasAnalysis || analyzing || generatingTasks}
-            title={!hasAnalysis ? "Run AI analysis first to generate tasks" : undefined}
-          >
-            {generatingTasks
-              ? "Generating Tasks…"
-              : tasksCount > 0
-              ? `Generate Tasks (${tasksCount})`
-              : "Generate Tasks"}
-          </button>
 
           <button
             className="btn-primary"

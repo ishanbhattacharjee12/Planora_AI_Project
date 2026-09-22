@@ -97,12 +97,12 @@ export default function ProjectsList() {
     <div className="page-shell projects-page">
       <div className="page-toolbar">
         <div>
-          <span className="page-kicker">Portfolio</span>
-          <h1 className="page-title">All projects</h1>
-          <p>Review delivery status and open any project workspace.</p>
+          <span className="page-kicker">Project Portfolio</span>
+          <h1 className="page-title">Project Directory</h1>
+          <p>Monitor project delivery status, track active milestones, and manage project lifecycles.</p>
         </div>
         <Link to="/manager/projects/create" className="button btn-primary">
-          <Plus size={17} />New project
+          <Plus size={17} />New Project
         </Link>
       </div>
 

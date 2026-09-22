@@ -50,7 +50,6 @@ from app.services.audit_service import log_audit
 from app.services.analysis_pdf import analysis_pdf_filename, build_analysis_pdf
 from app.services.project_service import (
     approve_project_plan,
-    generate_tasks_from_analysis,
     get_project,
     user_can_access_project,
 )
@@ -458,24 +457,7 @@ async def approve_project(
     return project
 
 
-@router.post("/{project_id}/generate-tasks")
-async def generate_tasks(
-    project_id: int,
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(RequireManager),
-):
-    project = await get_project(db, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if not await user_can_access_project(db, user, project_id):
-        raise HTTPException(status_code=403, detail="Access denied")
-    if project.status == ProjectStatus.REVIEW:
-        await approve_project_plan(db, project, user.id)
-    elif project.status not in (ProjectStatus.APPROVED, ProjectStatus.IN_PROGRESS):
-        raise HTTPException(status_code=400, detail="Project must be approved first")
-    tasks = await generate_tasks_from_analysis(db, project)
-    await log_audit(db, user_id=user.id, action="generate_tasks", resource_type="project", resource_id=project.id)
-    return {"created": len(tasks), "task_ids": [t.id for t in tasks]}
+
 
 
 @router.get("/{project_id}/versions", response_model=list[ProjectVersionResponse])

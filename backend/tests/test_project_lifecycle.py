@@ -303,7 +303,7 @@ async def test_task_independence_from_project_status(authed_client, db_session: 
 
 
 @pytest.mark.asyncio
-async def test_manager_scoping_and_task_generation_authorization(
+async def test_manager_scoping_authorization(
     authed_client, other_manager_client, db_session: AsyncSession
 ):
     # Manager 1 creates project
@@ -325,7 +325,93 @@ async def test_manager_scoping_and_task_generation_authorization(
     assert m2_stats["total_projects"] == 0
     assert m2_stats["pending_tasks"] == 0
 
-    # Manager 2 cannot generate tasks on Manager 1's project (403)
-    gen_resp = await other_manager_client.post(f"/api/projects/{p_id}/generate-tasks")
-    assert gen_resp.status_code == 403
+    # Manager 2 cannot update Manager 1's project (403)
+    patch_resp = await other_manager_client.patch(
+        f"/api/projects/{p_id}", json={"status": "completed"},
+    )
+    assert patch_resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_generate_tasks_endpoint_removed(authed_client):
+    """The generate-tasks endpoint has been removed entirely."""
+    create_resp = await authed_client.post(
+        "/api/projects",
+        json={"name": "No Task Gen Project", "idea": "Endpoint removed"},
+    )
+    assert create_resp.status_code == 201
+    p_id = create_resp.json()["id"]
+
+    gen_resp = await authed_client.post(f"/api/projects/{p_id}/generate-tasks")
+    assert gen_resp.status_code in (404, 405)  # Route no longer exists
+
+
+@pytest.mark.asyncio
+async def test_delete_project_cleans_up_all_records(authed_client, db_session: AsyncSession):
+    """Deletion must remove the project and all dependent rows."""
+    create_resp = await authed_client.post(
+        "/api/projects",
+        json={"name": "Delete Cleanup Project", "idea": "Test cascade deletion"},
+    )
+    assert create_resp.status_code == 201
+    p_id = create_resp.json()["id"]
+
+    # Add task rows
+    db_session.add(Task(project_id=p_id, task_id="DEL-T1", name="Delete Task 1", status=TaskStatus.TODO))
+    db_session.add(Task(project_id=p_id, task_id="DEL-T2", name="Delete Task 2", status=TaskStatus.IN_PROGRESS))
+    await db_session.flush()
+
+    # Verify project exists
+    get_resp = await authed_client.get(f"/api/projects/{p_id}")
+    assert get_resp.status_code == 200
+
+    # Delete the project
+    del_resp = await authed_client.delete(f"/api/projects/{p_id}")
+    assert del_resp.status_code == 204
+
+    # Verify project is gone (403 or 404 — both confirm deletion)
+    gone_resp = await authed_client.get(f"/api/projects/{p_id}")
+    assert gone_resp.status_code in (403, 404)
+
+    # Verify tasks are cleaned up
+    from sqlalchemy import select
+    from app.models import Task as TaskModel
+    remaining = (await db_session.execute(
+        select(TaskModel).where(TaskModel.project_id == p_id)
+    )).scalars().all()
+    assert len(remaining) == 0
+
+
+@pytest.mark.asyncio
+async def test_status_consistency_across_dashboard_and_list(authed_client, db_session: AsyncSession):
+    """Dashboard stats must be consistent with project list filtering."""
+    # Create 3 projects with different statuses
+    p1 = await authed_client.post("/api/projects", json={"name": "P1", "idea": "i1"})
+    p2 = await authed_client.post("/api/projects", json={"name": "P2", "idea": "i2"})
+    p3 = await authed_client.post("/api/projects", json={"name": "P3", "idea": "i3"})
+
+    await authed_client.patch(f"/api/projects/{p1.json()['id']}", json={"status": "in_progress"})
+    await authed_client.patch(f"/api/projects/{p2.json()['id']}", json={"status": "completed"})
+    await authed_client.patch(f"/api/projects/{p3.json()['id']}", json={"status": "overdue"})
+
+    # Get dashboard stats
+    stats = (await authed_client.get("/api/dashboard/stats")).json()
+    assert stats["total_projects"] == 3
+    assert stats["active_projects"] == 1
+    assert stats["completed_projects"] == 1
+    assert stats["overdue_projects"] == 1
+
+    # Get project list and verify counts match
+    projects = (await authed_client.get("/api/projects")).json()
+    active_from_list = sum(1 for p in projects if p["status"] in ("in_progress", "approved", "review"))
+    completed_from_list = sum(1 for p in projects if p["status"] == "completed")
+    overdue_from_list = sum(1 for p in projects if p["status"] == "overdue")
+
+    assert active_from_list == stats["active_projects"]
+    assert completed_from_list == stats["completed_projects"]
+    assert overdue_from_list == stats["overdue_projects"]
+
+    # Each project is counted in exactly one bucket
+    assert active_from_list + completed_from_list + overdue_from_list == 3
+
 

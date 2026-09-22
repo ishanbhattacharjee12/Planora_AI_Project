@@ -247,8 +247,6 @@ export const projectsApi = {
       body: JSON.stringify({ step, payload }),
     }),
   approve: (id: number) => api<Project>(`/projects/${id}/approve`, { method: "POST" }),
-  generateTasks: (id: number) =>
-    api<{ created: number }>(`/projects/${id}/generate-tasks`, { method: "POST" }),
   versions: (id: number) => api<Array<{ id: number; version_number: number; change_summary: string | null; created_at: string }>>(`/projects/${id}/versions`),
 };
 

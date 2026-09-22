@@ -63,34 +63,78 @@ export function DistributionChart({
   data,
   centerLabel,
   onSliceClick,
+  colorMap,
+  insights,
 }: {
   data: Array<{ name: string; value: number }>;
   centerLabel: string;
   onSliceClick?: (item: { name: string; value: number }) => void;
+  colorMap?: Record<string, string>;
+  insights?: ReactNode;
 }) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const populated = total ? data : [{ name: "No data", value: 1 }];
+  const getColor = (name: string, index: number) =>
+    (colorMap && colorMap[name]) || CHART_COLORS[index % CHART_COLORS.length];
+
   return (
     <div className="distribution-wrap">
       <div className="donut-frame">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
-            <Pie data={populated} dataKey="value" nameKey="name" innerRadius="67%" outerRadius="91%" paddingAngle={total ? 3 : 0} stroke="none" onClick={(_, index) => { const item = populated[index]; if (item && onSliceClick) onSliceClick(item); }}>
-              {populated.map((_, index) => <Cell key={index} fill={total ? CHART_COLORS[index % CHART_COLORS.length] : "#ecebe7"} />)}
+            <Pie
+              data={populated}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="67%"
+              outerRadius="91%"
+              paddingAngle={total ? 3 : 0}
+              stroke="none"
+              onClick={(_, index) => {
+                const item = populated[index];
+                if (item && onSliceClick) onSliceClick(item);
+              }}
+            >
+              {populated.map((item, index) => (
+                <Cell
+                  key={index}
+                  fill={total ? getColor(item.name, index) : "#ecebe7"}
+                />
+              ))}
             </Pie>
             <Tooltip contentStyle={{ border: "1px solid #e4e2dc", borderRadius: 6 }} />
           </PieChart>
         </ResponsiveContainer>
         <div className="donut-center"><strong>{total}</strong><span>{centerLabel}</span></div>
       </div>
-      <div className="chart-legend">
-        {data.map((item, index) => (
-          <div className={`legend-row ${onSliceClick ? "is-clickable" : ""}`} key={item.name} onClick={() => onSliceClick?.(item)} role={onSliceClick ? "link" : undefined} tabIndex={onSliceClick ? 0 : undefined} onKeyDown={(event) => { if (onSliceClick && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onSliceClick(item); } }}>
-            <span className="legend-dot" style={{ background: CHART_COLORS[index % CHART_COLORS.length] }} />
-            <span>{item.name}</span><strong>{item.value}</strong>
-          </div>
-        ))}
-      </div>
+      {insights ? (
+        insights
+      ) : (
+        <div className="chart-legend">
+          {data.map((item, index) => (
+            <div
+              className={`legend-row ${onSliceClick ? "is-clickable" : ""}`}
+              key={item.name}
+              onClick={() => onSliceClick?.(item)}
+              role={onSliceClick ? "link" : undefined}
+              tabIndex={onSliceClick ? 0 : undefined}
+              onKeyDown={(event) => {
+                if (onSliceClick && (event.key === "Enter" || event.key === " ")) {
+                  event.preventDefault();
+                  onSliceClick(item);
+                }
+              }}
+            >
+              <span
+                className="legend-dot"
+                style={{ background: getColor(item.name, index) }}
+              />
+              <span>{item.name}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

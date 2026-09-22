@@ -24,11 +24,11 @@ const NAV: Record<string, Array<{ to: string; label: string; icon: typeof Activi
 const PAGE_NAMES: Record<string, string> = {
   dashboard: "Dashboard",
   projects: "Projects",
-  create: "Create project",
-  tasks: "My tasks",
-  users: "Users",
-  audit: "Audit logs",
-  logs: "Project memory logs",
+  create: "Create Project",
+  tasks: "My Tasks",
+  users: "User Management",
+  audit: "Audit Logs",
+  logs: "Project Memory Logs",
 };
 
 export default function Layout() {
@@ -37,8 +37,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const links = NAV[user?.role || "employee"] || [];
   const currentSegment = location.pathname.split("/").filter(Boolean).pop() || "dashboard";
-  const currentPage = /^\d+$/.test(currentSegment) ? "Project details" : (PAGE_NAMES[currentSegment] || "Workspace");
-  const initials = user?.full_name?.split(" ").map((word) => word[0]).join("").slice(0, 2).toUpperCase() || "PI";
+  const currentPage = /^\d+$/.test(currentSegment) ? "Project Details" : (PAGE_NAMES[currentSegment] || "Workspace");
   const isActiveLink = (to: string) => {
     if (to.endsWith("/projects/create")) return location.pathname === to;
     if (to.endsWith("/projects")) return location.pathname === to || /^\/manager\/projects\/\d+$/.test(location.pathname);
@@ -60,7 +59,7 @@ export default function Layout() {
         </div>
         <div className="product-name">
           <img className="product-icon" src="/planora-icon.svg" alt="" />
-          <div><span>Planora AI</span><strong>Plan · analyze · deliver</strong></div>
+          <div><span>Planora AI</span><strong>Plan · Analyze · Deliver</strong></div>
         </div>
         <p className="nav-label">Workspace</p>
         <nav className="sidebar-nav">
@@ -70,15 +69,11 @@ export default function Layout() {
           </Link>
         ))}
         </nav>
-        <div className="sidebar-footer">
-          <div className="user-avatar">{initials}</div>
-          <div className="sidebar-user"><strong>{user?.full_name}</strong><span>{user?.role}</span></div>
-        </div>
       </aside>
       <div className="app-frame">
         <header className="topbar">
-          <div><span className="topbar-eyebrow">{user?.role} workspace</span><strong>{currentPage}</strong></div>
-          <div className="topbar-status"><span className="status-dot" />System operational</div>
+          <div><span className="topbar-eyebrow">{user?.role} Workspace</span><strong>{currentPage}</strong></div>
+          <div className="topbar-status"><span className="status-dot" />System Operational</div>
         </header>
         <main className="main"><Outlet /></main>
       </div>
