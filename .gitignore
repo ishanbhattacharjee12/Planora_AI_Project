@@ -1,0 +1,47 @@
+# Environment
+.env
+.env.*
+!.env.example
+backend/.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+frontend/dist/
+
+# Logs & Cache
+*.log
+.runlogs/
+
+# Database & Uploads
+*.db
+backend/chroma_data/
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Testing artifacts
+playwright-report/
+test-results/
+
+# Markdown / Local reference files
+*.md

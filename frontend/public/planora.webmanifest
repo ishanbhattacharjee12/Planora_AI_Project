@@ -1,0 +1,17 @@
+{
+  "name": "Planora AI",
+  "short_name": "Planora",
+  "description": "AI-powered project planning and delivery intelligence.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f6f8",
+  "theme_color": "#183b56",
+  "icons": [
+    {
+      "src": "/planora-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
