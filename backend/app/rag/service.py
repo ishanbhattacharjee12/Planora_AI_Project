@@ -115,7 +115,7 @@ async def search_chunks(
     with observation(
         "retrieve-document-context", as_type="retriever",
         input={"query_chars": len(query), "authorized_project_count": len(authorized_project_ids)},
-        metadata={"limit": limit, "index": "pgvector" if "postgresql" in settings.database_url else "sqlite"},
+        metadata={"limit": limit, "index": "cosine-similarity"},
     ) as retrieval:
         chunks = await _search_chunks(db, query, authorized_project_ids, limit)
         if retrieval is not None:
@@ -128,32 +128,11 @@ async def _search_chunks(
 ) -> list[DocumentChunk]:
     query_embedding = (await ai_gateway.embed([query]))[0]
 
-    if "postgresql" in settings.database_url:
-        from sqlalchemy import text as sql_text
-        ids_clause = ",".join(str(i) for i in authorized_project_ids) if authorized_project_ids else "0"
-        sql = sql_text(f"""
-            SELECT id, document_id, project_id, chunk_index, content, metadata_json
-            FROM document_chunks
-            WHERE project_id IN ({ids_clause}) OR project_id IS NULL
-            ORDER BY embedding <=> :embedding
-            LIMIT :limit
-        """)
-        result = await db.execute(sql, {"embedding": str(query_embedding), "limit": limit})
-        rows = result.fetchall()
-        return [
-            DocumentChunk(
-                id=row.id, document_id=row.document_id, project_id=row.project_id,
-                chunk_index=row.chunk_index, content=row.content, metadata_json=row.metadata_json,
-            )
-            for row in rows
-        ]
-
-    # SQLite fallback: brute-force cosine similarity
     result = await db.execute(select(DocumentChunk))
     all_chunks = result.scalars().all()
     scored = []
     for chunk in all_chunks:
-        if chunk.project_id and chunk.project_id not in authorized_project_ids:
+        if chunk.project_id is not None and chunk.project_id not in authorized_project_ids:
             continue
         if chunk.embedding:
             score = _cosine_similarity(query_embedding, list(chunk.embedding))
