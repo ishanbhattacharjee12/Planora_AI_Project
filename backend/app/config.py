@@ -1,4 +1,4 @@
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,6 +9,15 @@ class Settings(BaseSettings):
     debug: bool = True
 
     database_url: str = "sqlite+aiosqlite:///./projectintel.db"
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        if v.startswith("postgresql://") and not v.startswith("postgresql+"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
     redis_url: str = "redis://localhost:6379/0"
 
     jwt_secret: str = "change-me"
